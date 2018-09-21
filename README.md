@@ -43,3 +43,15 @@ wordcount using threads
 sort using processes
 sort using threads
 with any arbitrary number of maps and reduces.
+
+
+
+
+--------------------------------------------------------------------------------------------------------------------------------
+
+
+# Project Outline
+
+## Initial Read In
+
+Given a File Input Stream and a Vector, the *tokenizer()* function populates the Vector with the input from the file input stream. All inputs are read in and saved as lowercase.
