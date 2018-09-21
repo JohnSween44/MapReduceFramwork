@@ -52,6 +52,12 @@ with any arbitrary number of maps and reduces.
 
 # Project Outline
 
-## Initial Read In
+### Initial Read In
 
-Given a File Input Stream and a Vector, the *tokenizer()* function populates the Vector with the input from the file input stream. All inputs are read in and saved as lowercase.
+Given a File Input Stream and a Vector, the *tokenizer()* function populates the Vector with the input from the file input stream. All inputs are read in and saved as lowercase to the vector.
+
+### Delegator
+
+After *tokenizer()* populates the vector, the *delegator()* function takes the vector, and preforms the operations to split it into *n* smaller vectors to be handed off to the threads/processes.
+
+
