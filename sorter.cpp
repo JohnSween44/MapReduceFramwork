@@ -66,6 +66,7 @@ void fileReader(std::ifstream * in, std::vector < std::string > * vectorIn){
 	//Goes through file while has input and adds to passed in array. 
 	while (*in >> a)
 	{	
+		std::transform(a.begin(), a.end(), a.begin(), ::tolower);
 		vec->push_back( a );
 	}
 
