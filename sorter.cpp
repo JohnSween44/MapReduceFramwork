@@ -6,7 +6,7 @@
 #include <utility>
 
 
-void fileReader(std::ifstream * in, std::vector < std::string > * vectorIn);
+void vectorizer(std::ifstream * in, std::vector < std::string > * vectorIn);
 
 int main(int argc, char ** argv){
 
@@ -25,7 +25,7 @@ int main(int argc, char ** argv){
 	std::vector < std::string > totList;
 
 	//Tokenize  
-	fileReader(&readin, &totList);
+	vectorizer(&readin, &totList);
 
 
 	for (int i = 0; i < totList.size(); i++){
@@ -54,7 +54,7 @@ Output:
 	Tokenzied vector of all the words present in file passed in to function.
 
 */
-void fileReader(std::ifstream * in, std::vector < std::string > * vectorIn){
+void vectorizers(std::ifstream * in, std::vector < std::string > * vectorIn){
 
 	//Open file input stream and set local vars for input and vector;
 	std::ifstream * mapRead = in;
