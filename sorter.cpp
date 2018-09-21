@@ -40,9 +40,18 @@ int main(int argc, char ** argv){
 
 
 /*
+Working as of 9/21/18
 
+Input: 
+	std::ifstream * in
+		- File input stream, already opened.
 
+	std::vector <std::string> * vectorIn
+		- External vector that function will read words from file into
 
+Output:
+
+	Tokenzied vector of all the words present in file passed in to function.
 
 */
 void fileReader(std::ifstream * in, std::vector < std::string > * vectorIn){
@@ -51,8 +60,10 @@ void fileReader(std::ifstream * in, std::vector < std::string > * vectorIn){
 	std::ifstream * mapRead = in;
 	std::vector < std::string > * vec = vectorIn;
 
+	//Variable to hold the word
 	std::string a;
 
+	//Goes through file while has input and adds to passed in array. 
 	while (*in >> a)
 	{	
 		vec->push_back( a );
