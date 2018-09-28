@@ -7,7 +7,7 @@
 #include <math.h>
 #include <cstdlib>
 #include <cstdio>
-
+#include <string.h>
 
 void vectorizer(std::ifstream*, std::vector<std::string>*, int, int);
 
@@ -52,12 +52,10 @@ int main(int argc, char ** argv){
 	//Tokenize  
 	vectorizer(&readin, &totList, num_maps, num_reduces);
 
-	/*
-	for (int i = 0; i < totList.size(); i++){
-		std::cout << totList[i] << "\n";
-	}
-	*/
-	std::cout << "Total Size: " << totList.size() << "\n";
+//	for (int i = 0; i < totList.size(); i++){
+//		std::cout << totList[i] << "\n";
+//	}
+//	std::cout << "Total Size: " << totList.size() << "\n";
 
 	return 0;
 }
@@ -81,15 +79,29 @@ void vectorizer(std::ifstream *in, std::vector < std::string > *vectorIn, int nu
 	std::ifstream * mapRead = in;
 	std::vector < std::string > * vec = vectorIn;
 
-	//Variable to hold the word
 	std::string a;
-
-	//Goes through file while has input and adds to passed in array. 
-	while (*in >> a)
-	{	
-		std::transform(a.begin(), a.end(), a.begin(), ::tolower);
-		vec->push_back( a );
+	std::string holdMe;
+	while(std::getline(*in, holdMe)){
+	 	a += holdMe;
+		a += "\n";
 	}
+
+	char * readable = new char[a.length()+1];
+	strcpy (readable, a.c_str());
+
+	std::cout << readable;	
+
+	char * pleaseWork = strtok(readable, " .,;:!-\n");
+	//printf("This is the first word: %s\n", pleaseWork);
+	
+	while(pleaseWork != NULL){
+                std::string a = pleaseWork;
+		std::transform(a.begin(), a.end(), a.begin(), ::tolower);
+                vec->push_back( a );
+		pleaseWork  = strtok(NULL, " .,:;!-\n");
+	}
+
+
 
 	//std::sort(vec->begin(), vec->end());
 	
@@ -122,14 +134,14 @@ void vectorizer(std::ifstream *in, std::vector < std::string > *vectorIn, int nu
 		//add temp to 2D vector that will then be used to pair with threads/procs
 		vects.push_back(temp);
 	}
-	
+
 	//test printer for checking partions
-	//for(int i = 0; i < vects.size(); i++){
-	//	for(int t = 0; t < vects[i].size(); t++){
-	//		std::cout << vects[i][t] << std::endl;
-	//	}
-	//	std::cout << "------------------------------" << i << std::endl;
-	//}
+	for(int i = 0; i < vects.size(); i++){
+		for(int t = 0; t < vects[i].size(); t++){
+			std::cout << vects[i][t] << std::endl;
+		}
+		std::cout << "------------------------------" << i << std::endl;
+	}
 
 
 }

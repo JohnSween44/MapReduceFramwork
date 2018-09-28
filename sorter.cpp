@@ -54,7 +54,7 @@ Output:
 	Tokenzied vector of all the words present in file passed in to function.
 
 */
-void vectorizers(std::ifstream * in, std::vector < std::string > * vectorIn){
+void vectorizer(std::ifstream * in, std::vector < std::string > * vectorIn){
 
 	//Open file input stream and set local vars for input and vector;
 	std::ifstream * mapRead = in;

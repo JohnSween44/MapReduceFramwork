@@ -1,7 +1,7 @@
-all: sorter.cpp
-	g++ -o sort sorter.cpp
+all: mapred.cpp
+	g++ -o map mapred.cpp
 
 
 
-clean: sort
-	rm sort
+clean: map
+	rm map
