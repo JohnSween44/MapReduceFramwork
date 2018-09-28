@@ -7,12 +7,7 @@
 #include <math.h>
 #include <cstdlib>
 #include <cstdio>
-#include <unistd.h>
-#include <sys/wait.h>
-#include <sys/mman.h>
-#include <sys/shm.h>
-#include <sys/stat.h>
-#include <fcntl.h>
+#include <string.h>
 
 void vectorizer(std::ifstream*, std::vector<std::string>*, int, int);
 
@@ -46,7 +41,7 @@ int main(int argc, char ** argv){
         //if(app == -1 || impl == -1){
         //      cout << "Invalid Input!";
         //}else{
-        //
+        //      
         //}
         std::ifstream readin;
         readin.open(input);
@@ -54,15 +49,13 @@ int main(int argc, char ** argv){
         //Vector of pairs to read into
         std::vector < std::string > totList;
 
-        //Tokenize
+        //Tokenize  
         vectorizer(&readin, &totList, num_maps, num_reduces);
 
-        /*
-        for (int i = 0; i < totList.size(); i++){
-                std::cout << totList[i] << "\n";
-        }
-        */
-        std::cout << "Total Size: " << totList.size() << "\n";
+//      for (int i = 0; i < totList.size(); i++){
+//              std::cout << totList[i] << "\n";
+//      }
+//      std::cout << "Total Size: " << totList.size() << "\n";
 
         return 0;
 }
@@ -71,7 +64,7 @@ int main(int argc, char ** argv){
 
 /*
 Working as of 9/21/18
-Input:
+Input: 
         std::ifstream * in
                 - File input stream, already opened.
         std::vector <std::string> * vectorIn
@@ -86,30 +79,44 @@ void vectorizer(std::ifstream *in, std::vector < std::string > *vectorIn, int nu
         std::ifstream * mapRead = in;
         std::vector < std::string > * vec = vectorIn;
 
-        //Variable to hold the word
         std::string a;
+        std::string holdMe;
+        while(std::getline(*in, holdMe)){
+                a += holdMe;
+                a += "\n";
+        }
 
-        //Goes through file while has input and adds to passed in array.
-        while (*in >> a)
-        {
+        char * readable = new char[a.length()+1];
+        strcpy (readable, a.c_str());
+
+        std::cout << readable;
+
+        char * pleaseWork = strtok(readable, " .,;:!-\n");
+        //printf("This is the first word: %s\n", pleaseWork);
+
+        while(pleaseWork != NULL){
+                std::string a = pleaseWork;
                 std::transform(a.begin(), a.end(), a.begin(), ::tolower);
                 vec->push_back( a );
+                pleaseWork  = strtok(NULL, " .,:;!-\n");
         }
+
+
 
         //std::sort(vec->begin(), vec->end());
 
-        //the following block of code is to partion the vector of all text to semi-evenly
+        //the following block of code is to partion the vector of all text to semi-evenly 
         //filled sub vectors, these sub vectors are then stored into a vector
         //first step: use ceiling function to find at most how many elements each vector hass
         int numElements = ceil(vec->size()/numMaps);
-        //intilizes 2D vector
+        //intilizes 2D vector 
         std::vector< std::vector<std::string> > vects;
         int vecCurrentElement = 0;
         //the number of sub-vectors is the number of mappers loop to create a sub vector for each mapper
         for(int i = 0; i < numMaps; i++){
                 //initilze a temp vector to hold subbector
                 std::vector<std::string> temp;
-                //first check how many subvectors get one extra element (i.e. distributing remaining elements
+                //first check how many subvectors get one extra element (i.e. distributing remaining elements 
                 //among the first n elements
                 if(i < (vec->size() % numMaps)){
                         for(int t = 0; t < numElements+1; t++){
@@ -117,7 +124,7 @@ void vectorizer(std::ifstream *in, std::vector < std::string > *vectorIn, int nu
                                 vecCurrentElement++;
                         }
                 }
-                //otherwise just add apropriate number of elements
+                 //otherwise just add apropriate number of elements
                 else{
                         for(int t = 0; t < numElements; t++){
                                 temp.push_back((*vec)[vecCurrentElement]);
@@ -126,37 +133,15 @@ void vectorizer(std::ifstream *in, std::vector < std::string > *vectorIn, int nu
                 }
                 //add temp to 2D vector that will then be used to pair with threads/procs
                 vects.push_back(temp);
-      }
+        }
 
         //test printer for checking partions
-        //for(int i = 0; i < vects.size(); i++){
-        //      for(int t = 0; t < vects[i].size(); t++){
-        //              std::cout << vects[i][t] << std::endl;
-        //      }
-        //      std::cout << "------------------------------" << i << std::endl;
-        //}
-
-        pid_t wpid;
-        key_t key = ftok("shmfle",100);
-        int shmid = shmget(key,1024,0666|IPC_CREAT);
-        char *str = (char*) shmat(shmid,(void*)0,0);
-        sprintf(str,"i have no idea if this works");
-        //void *ptr = mmap(0, size, PROT_WRITE, MAP_SHARED, smfd, 0);
-        for(int i = 0; i < numMaps; i++){
-                pid_t pid = fork();
-                if(pid == 0){
-                        std::vector< std::pair<std::string, int> > keyValue;
-                        for(int j = 0; j < vects[i].size(); j++){
-                                keyValue.push_back(make_pair(vects[i][j], 1));
-                        }
-                        std::cout << "chiled " << getpid() << " parent " << getppid() << std::endl;
-                        for(int i = 0; i < keyValue.size(); i++){
-                                //std::cout << keyValue[i].first << ", " << keyValue[i].second << std::endl;
-                        }
-                exit(0);
+        for(int i = 0; i < vects.size(); i++){
+                for(int t = 0; t < vects[i].size(); t++){
+                        std::cout << vects[i][t] << std::endl;
                 }
+                std::cout << "------------------------------" << i << std::endl;
         }
-        int status = 0;
-        while((wpid = wait(&status)) > 0);
+
 
 }
