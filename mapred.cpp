@@ -7,6 +7,12 @@
 #include <math.h>
 #include <cstdlib>
 #include <cstdio>
+#include <unistd.h>
+#include <sys/wait.h>
+#include <sys/mman.h>
+#include <sys/shm.h>
+#include <sys/stat.h>
+#include <fcntl.h>
 #include <string.h>
 
 void vectorizer(std::ifstream*, std::vector<std::string>*, int, int);
@@ -134,7 +140,7 @@ void vectorizer(std::ifstream *in, std::vector < std::string > *vectorIn, int nu
                 //add temp to 2D vector that will then be used to pair with threads/procs
                 vects.push_back(temp);
         }
-
+/*
         //test printer for checking partions
         for(int i = 0; i < vects.size(); i++){
                 for(int t = 0; t < vects[i].size(); t++){
@@ -142,6 +148,30 @@ void vectorizer(std::ifstream *in, std::vector < std::string > *vectorIn, int nu
                 }
                 std::cout << "------------------------------" << i << std::endl;
         }
+*/
 
-
+         pid_t wpid;
+                key_t key = ftok("shmfle",100);
+                int shmid = shmget(key,1024,0666|IPC_CREAT);
+                char *str = (char*) shmat(shmid,(void*)0,0);
+                sprintf(str,"i have no idea if this works");
+                //void *ptr = mmap(0, size, PROT_WRITE, MAP_SHARED, smfd, 0);
+                for(int i = 0; i < numMaps; i++){
+                        pid_t pid = fork();
+                        if(pid == 0){
+                                std::vector< std::pair<std::string, int> > keyValue;
+                                for(int j = 0; j < vects[i].size(); j++){
+                                        keyValue.push_back(make_pair(vects[i][j], 1));
+                                }
+                                std::cout << "chiled " << getpid() << " parent " << getppid() << std::endl;
+                                for(int i = 0; i < keyValue.size(); i++){
+                                        //std::cout << keyValue[i].first << ", " << keyValue[i].second << std::endl;
+                                }
+                        exit(0);
+                        }
+                }
+                int status = 0;
+                while((wpid = wait(&status)) > 0);
 }
+
+
