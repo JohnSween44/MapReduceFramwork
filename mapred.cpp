@@ -1,21 +1,7 @@
-#include <iostream>
-#include <string>
-#include <fstream>
-#include <algorithm>
-#include <vector>
-#include <utility>
-#include <math.h>
-#include <cstdlib>
-#include <cstdio>
-#include <unistd.h>
-#include <sys/wait.h>
-#include <sys/mman.h>
-#include <sys/shm.h>
-#include <sys/stat.h>
-#include <fcntl.h>
-#include <string.h>
+#include "mapred.h"
 
-void vectorizer(std::ifstream*, std::vector<std::string>*, int, int);
+
+std::vector <std::vector <std::string> > vectorizer(std::ifstream *in, std::vector < std::string > *vectorIn ,int numMaps, int numReducers);
 
 int main(int argc, char ** argv){
 
@@ -54,14 +40,23 @@ int main(int argc, char ** argv){
 
         //Vector of pairs to read into
         std::vector < std::string > totList;
+	
+	//Where pairs will be stored
+	std::vector< std::vector <std::string > > storedList = vectorizer(&readin, &totList, num_maps, num_reduces); ;	
 
-        //Tokenize  
-        vectorizer(&readin, &totList, num_maps, num_reduces);
+        for(int i = 0; i < storedList.size(); i++){
+                for(int t = 0; t < storedList[i].size(); t++){
+                        std::cout << storedList[i][t] << std::endl;
+                }
+                std::cout << "------------------------------" << i << std::endl;
+	}
 
-//      for (int i = 0; i < totList.size(); i++){
-//              std::cout << totList[i] << "\n";
-//      }
-//      std::cout << "Total Size: " << totList.size() << "\n";
+
+        //Tokenize
+//        vectorizer(&readin, &totList, &pairedList, num_maps, num_reduces);
+	readin.close();
+
+
 
         return 0;
 }
@@ -79,7 +74,7 @@ Output:
         -Tokenzied vector of all the words present in file passed in to function.
         -vector of vectors of tokenized input
 */
-void vectorizer(std::ifstream *in, std::vector < std::string > *vectorIn, int numMaps, int numReducers){
+std::vector < std::vector <std::string> > vectorizer(std::ifstream *in, std::vector < std::string > *vectorIn ,int numMaps, int numReducers){
 
         //Open file input stream and set local vars for input and vector;
         std::ifstream * mapRead = in;
@@ -95,7 +90,7 @@ void vectorizer(std::ifstream *in, std::vector < std::string > *vectorIn, int nu
         char * readable = new char[a.length()+1];
         strcpy (readable, a.c_str());
 
-        std::cout << readable;
+        //std::cout << readable;
 
         char * pleaseWork = strtok(readable, " .,;:!-\n");
         //printf("This is the first word: %s\n", pleaseWork);
@@ -140,6 +135,7 @@ void vectorizer(std::ifstream *in, std::vector < std::string > *vectorIn, int nu
                 //add temp to 2D vector that will then be used to pair with threads/procs
                 vects.push_back(temp);
         }
+	return vects;
 /*
         //test printer for checking partions
         for(int i = 0; i < vects.size(); i++){
@@ -148,7 +144,7 @@ void vectorizer(std::ifstream *in, std::vector < std::string > *vectorIn, int nu
                 }
                 std::cout << "------------------------------" << i << std::endl;
         }
-*/
+
 
          pid_t wpid;
                 key_t key = ftok("shmfle",100);
@@ -164,14 +160,16 @@ void vectorizer(std::ifstream *in, std::vector < std::string > *vectorIn, int nu
                                         keyValue.push_back(make_pair(vects[i][j], 1));
                                 }
                                 std::cout << "chiled " << getpid() << " parent " << getppid() << std::endl;
-                                for(int i = 0; i < keyValue.size(); i++){
+                     //           for(int i = 0; i < keyValue.size(); i++){
                                         //std::cout << keyValue[i].first << ", " << keyValue[i].second << std::endl;
-                                }
+                       //         }
                         exit(0);
                         }
                 }
                 int status = 0;
                 while((wpid = wait(&status)) > 0);
+
+*/
 }
 
 

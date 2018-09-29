@@ -1,7 +1,11 @@
-all: mapred.cpp
-	g++ -o map mapred.cpp
+all: threadfunc.o mapred.cpp
+	g++ -o mapred mapred.cpp threadfunc.o
 
+threadfunc.o: threadfunc.cpp
+	g++ -c threadfunc.cpp
 
+run: mapred
+	./mapred wordproc procs 4 4 geo.txt
 
-clean: map
-	rm map
+clean: mapred threadfunc.o
+	rm mapred threadfunc.o
