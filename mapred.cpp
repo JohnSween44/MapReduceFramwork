@@ -1,21 +1,7 @@
-#include <iostream>
-#include <string>
-#include <fstream>
-#include <algorithm>
-#include <vector>
-#include <utility>
-#include <math.h>
-#include <cstdlib>
-#include <cstdio>
-#include <unistd.h>
-#include <sys/wait.h>
-#include <sys/mman.h>
-#include <sys/shm.h>
-#include <sys/stat.h>
-#include <fcntl.h>
-#include <string.h>
+#include "mapred.h"
 
-void vectorizer(std::ifstream*, std::vector<std::string>*, int, int);
+
+std::vector <std::vector <std::string> > vectorizer(std::ifstream *in, std::vector < std::string > *vectorIn ,int numMaps, int numReducers);
 
 int main(int argc, char ** argv){
 
@@ -27,41 +13,64 @@ int main(int argc, char ** argv){
         char* input = argv[5];
         char* output = argv[6];
 
-        //Update variables from command line
-        if(argv[1] == "wordcount"){
-                app = 1;
-        }else if(argv[1] == "sort"){
-                app = 0;
-        }else{
-                app = -1;
-        }
+	int p = strcmp(argv[1], "wordcount");
+	int p1 = strcmp(argv[1], "sort");
+	int p11 = strcmp(argv[2], "procs");
+	int p111 = strcmp(argv[2], "threads");
 
-        if(argv[2] == "procs"){
+	if(p == 0)
+		app = 1;
+	else if (p1 = 0)
+		app = 0;
+	else{
+		std::cout << "Unexpected Input: \"" << argv[1] << "\"\n";
+		std::exit(-1);  
+	}        
+
+	 if(p11 == 0)
                 impl = 1;
-        }else if(argv[2] == "threads"){
+        else if (p111 == 0)
                 impl = 0;
-        }else{
-                impl = -1;
+        else{
+                std::cout << "Unexpected Input: \"" << argv[2] << "\"\n";
+                std::exit(-1);
         }
 
-        //if(app == -1 || impl == -1){
-        //      cout << "Invalid Input!";
-        //}else{
-        //      
-        //}
-        std::ifstream readin;
+
+
+	std::ifstream readin;
         readin.open(input);
 
         //Vector of pairs to read into
         std::vector < std::string > totList;
+	
+	//Where tokenzied strings will live
+	std::vector< std::vector <std::string > > storedList = vectorizer(&readin, &totList, num_maps, num_reduces); ;	
+	
+	//closing input stream
+	readin.close();
 
-        //Tokenize  
-        vectorizer(&readin, &totList, num_maps, num_reduces);
+	//Where paired...pairs will live
+	std::vector< std::pair<std::string, int> > pairedValues;
 
-//      for (int i = 0; i < totList.size(); i++){
-//              std::cout << totList[i] << "\n";
-//      }
-//      std::cout << "Total Size: " << totList.size() << "\n";
+	std::sort(pairedValues.begin(), pairedValues.end());
+		
+	if(impl == 0){
+		threadMap(storedList, &pairedValues, storedList.size()); 
+		printf("storedSize: %d\n", pairedValues.size());
+		for(int i = 0; i < pairedValues.size(); i++){
+			std::cout << pairedValues[i].first << ", " << pairedValues[i].second << std::endl;	
+		}
+
+
+
+		//Reduce w threads
+	}
+	else if (impl == 1){
+		//Map w procs
+		//Reduce w procs
+	}
+
 
         return 0;
 }
@@ -79,33 +88,25 @@ Output:
         -Tokenzied vector of all the words present in file passed in to function.
         -vector of vectors of tokenized input
 */
-void vectorizer(std::ifstream *in, std::vector < std::string > *vectorIn, int numMaps, int numReducers){
+std::vector < std::vector <std::string> > vectorizer(std::ifstream *in, std::vector < std::string > *vectorIn ,int numMaps, int numReducers){
 
         //Open file input stream and set local vars for input and vector;
         std::ifstream * mapRead = in;
         std::vector < std::string > * vec = vectorIn;
 
         std::string a;
-        std::string holdMe;
-        while(std::getline(*in, holdMe)){
-                a += holdMe;
-                a += "\n";
+
+        
+        while(*in >> a){
+                char temp[a.length()+1];
+                strcpy(temp, a.c_str());
+                char * wo = strtok(temp, " .,:;?!--");
+                std::string eff = wo;
+                std::transform(eff.begin(), eff.end(), eff.begin(), ::tolower);
+                vec->push_back( eff );
+
         }
 
-        char * readable = new char[a.length()+1];
-        strcpy (readable, a.c_str());
-
-        std::cout << readable;
-
-        char * pleaseWork = strtok(readable, " .,;:!-\n");
-        //printf("This is the first word: %s\n", pleaseWork);
-
-        while(pleaseWork != NULL){
-                std::string a = pleaseWork;
-                std::transform(a.begin(), a.end(), a.begin(), ::tolower);
-                vec->push_back( a );
-                pleaseWork  = strtok(NULL, " .,:;!-\n");
-        }
 
 
 
@@ -140,6 +141,11 @@ void vectorizer(std::ifstream *in, std::vector < std::string > *vectorIn, int nu
                 //add temp to 2D vector that will then be used to pair with threads/procs
                 vects.push_back(temp);
         }
+	return vects;
+
+}
+
+
 /*
         //test printer for checking partions
         for(int i = 0; i < vects.size(); i++){
@@ -148,7 +154,7 @@ void vectorizer(std::ifstream *in, std::vector < std::string > *vectorIn, int nu
                 }
                 std::cout << "------------------------------" << i << std::endl;
         }
-*/
+
 
          pid_t wpid;
                 key_t key = ftok("shmfle",100);
@@ -164,14 +170,15 @@ void vectorizer(std::ifstream *in, std::vector < std::string > *vectorIn, int nu
                                         keyValue.push_back(make_pair(vects[i][j], 1));
                                 }
                                 std::cout << "chiled " << getpid() << " parent " << getppid() << std::endl;
-                                for(int i = 0; i < keyValue.size(); i++){
+                     //           for(int i = 0; i < keyValue.size(); i++){
                                         //std::cout << keyValue[i].first << ", " << keyValue[i].second << std::endl;
-                                }
+                       //         }
                         exit(0);
                         }
                 }
                 int status = 0;
                 while((wpid = wait(&status)) > 0);
-}
+
+*/
 
 
