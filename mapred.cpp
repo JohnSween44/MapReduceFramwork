@@ -95,37 +95,8 @@ std::vector < std::vector <std::string> > vectorizer(std::ifstream *in, std::vec
         std::vector < std::string > * vec = vectorIn;
 
         std::string a;
-        std::string holdMe;
+
         
-/*
-
-	while(std::getline(*in, holdMe)){
-                a += holdMe;
-                a += "\n";
-        }
-
-
-
-        char * readable = new char[a.length()+1];
-        strcpy (readable, a.c_str());
-
-	//std::cout << readable << std::endl;	
-        //std::cout << readable;
-
-        char * pleaseWork = strtok(readable, " .,;:!-\n—");
-
-        while(pleaseWork != NULL){	
-	        std::string a = pleaseWork;
-	
-		//std::cout << pleaseWork << std::endl;
-		//std::cout << a << std::endl;
-		std::transform(a.begin(), a.end(), a.begin(), ::tolower);
-                //std::cout << a << std::endl;
-		vec->push_back( a );
-                pleaseWork  = strtok(NULL, " .,:;!-\n—");
-        }
-
-*/
         while(*in >> a){
                 char temp[a.length()+1];
                 strcpy(temp, a.c_str());
@@ -171,6 +142,10 @@ std::vector < std::vector <std::string> > vectorizer(std::ifstream *in, std::vec
                 vects.push_back(temp);
         }
 	return vects;
+
+}
+
+
 /*
         //test printer for checking partions
         for(int i = 0; i < vects.size(); i++){
@@ -205,6 +180,5 @@ std::vector < std::vector <std::string> > vectorizer(std::ifstream *in, std::vec
                 while((wpid = wait(&status)) > 0);
 
 */
-}
 
 
