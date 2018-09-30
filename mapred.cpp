@@ -52,7 +52,9 @@ int main(int argc, char ** argv){
 
 	//Where paired...pairs will live
 	std::vector< std::pair<std::string, int> > pairedValues;
-	
+
+	std::sort(pairedValues.begin(), pairedValues.end());
+		
 	if(impl == 0){
 		threadMap(storedList, &pairedValues, storedList.size()); 
 		printf("storedSize: %d\n", pairedValues.size());
@@ -94,7 +96,10 @@ std::vector < std::vector <std::string> > vectorizer(std::ifstream *in, std::vec
 
         std::string a;
         std::string holdMe;
-        while(std::getline(*in, holdMe)){
+        
+/*
+
+	while(std::getline(*in, holdMe)){
                 a += holdMe;
                 a += "\n";
         }
@@ -119,6 +124,18 @@ std::vector < std::vector <std::string> > vectorizer(std::ifstream *in, std::vec
 		vec->push_back( a );
                 pleaseWork  = strtok(NULL, " .,:;!-\n—");
         }
+
+*/
+        while(*in >> a){
+                char temp[a.length()+1];
+                strcpy(temp, a.c_str());
+                char * wo = strtok(temp, " .,:;?!--");
+                std::string eff = wo;
+                std::transform(eff.begin(), eff.end(), eff.begin(), ::tolower);
+                vec->push_back( eff );
+
+        }
+
 
 
 
