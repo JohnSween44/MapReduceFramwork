@@ -13,49 +13,61 @@ int main(int argc, char ** argv){
         char* input = argv[5];
         char* output = argv[6];
 
-        //Update variables from command line
-        if(argv[1] == "wordcount"){
-                app = 1;
-        }else if(argv[1] == "sort"){
-                app = 0;
-        }else{
-                app = -1;
-        }
+	int p = strcmp(argv[1], "wordcount");
+	int p1 = strcmp(argv[1], "sort");
+	int p11 = strcmp(argv[2], "procs");
+	int p111 = strcmp(argv[2], "threads");
 
-        if(argv[2] == "procs"){
+	if(p == 0)
+		app = 1;
+	else if (p1 = 0)
+		app = 0;
+	else{
+		std::cout << "Unexpected Input: \"" << argv[1] << "\"\n";
+		std::exit(-1);  
+	}        
+
+	 if(p11 == 0)
                 impl = 1;
-        }else if(argv[2] == "threads"){
+        else if (p111 == 0)
                 impl = 0;
-        }else{
-                impl = -1;
+        else{
+                std::cout << "Unexpected Input: \"" << argv[2] << "\"\n";
+                std::exit(-1);
         }
 
-        //if(app == -1 || impl == -1){
-        //      cout << "Invalid Input!";
-        //}else{
-        //      
-        //}
-        std::ifstream readin;
+
+
+	std::ifstream readin;
         readin.open(input);
 
         //Vector of pairs to read into
         std::vector < std::string > totList;
 	
-	//Where pairs will be stored
+	//Where tokenzied strings will live
 	std::vector< std::vector <std::string > > storedList = vectorizer(&readin, &totList, num_maps, num_reduces); ;	
-
-        for(int i = 0; i < storedList.size(); i++){
-                for(int t = 0; t < storedList[i].size(); t++){
-                        std::cout << storedList[i][t] << std::endl;
-                }
-                std::cout << "------------------------------" << i << std::endl;
-	}
-
-
-        //Tokenize
-//        vectorizer(&readin, &totList, &pairedList, num_maps, num_reduces);
+	
+	//closing input stream
 	readin.close();
 
+	//Where paired...pairs will live
+	std::vector< std::pair<std::string, int> > pairedValues;
+	
+	if(impl == 0){
+		threadMap(storedList, &pairedValues, storedList.size()); 
+		printf("storedSize: %d\n", pairedValues.size());
+		for(int i = 0; i < pairedValues.size(); i++){
+			std::cout << pairedValues[i].first << ", " << pairedValues[i].second << std::endl;	
+		}
+
+
+
+		//Reduce w threads
+	}
+	else if (impl == 1){
+		//Map w procs
+		//Reduce w procs
+	}
 
 
         return 0;
@@ -87,19 +99,25 @@ std::vector < std::vector <std::string> > vectorizer(std::ifstream *in, std::vec
                 a += "\n";
         }
 
+
+
         char * readable = new char[a.length()+1];
         strcpy (readable, a.c_str());
 
+	//std::cout << readable << std::endl;	
         //std::cout << readable;
 
-        char * pleaseWork = strtok(readable, " .,;:!-\n");
-        //printf("This is the first word: %s\n", pleaseWork);
+        char * pleaseWork = strtok(readable, " .,;:!-\n—");
 
-        while(pleaseWork != NULL){
-                std::string a = pleaseWork;
-                std::transform(a.begin(), a.end(), a.begin(), ::tolower);
-                vec->push_back( a );
-                pleaseWork  = strtok(NULL, " .,:;!-\n");
+        while(pleaseWork != NULL){	
+	        std::string a = pleaseWork;
+	
+		//std::cout << pleaseWork << std::endl;
+		//std::cout << a << std::endl;
+		std::transform(a.begin(), a.end(), a.begin(), ::tolower);
+                //std::cout << a << std::endl;
+		vec->push_back( a );
+                pleaseWork  = strtok(NULL, " .,:;!-\n—");
         }
 
 

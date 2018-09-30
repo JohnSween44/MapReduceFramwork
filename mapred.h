@@ -18,7 +18,7 @@
 #ifndef MAPRED_H
 #define MAPRED_H
 
-void threadMap(std::vector<std::string> vectorIn, int maps);
+void threadMap(std::vector< std::vector <std::string > > vectorIn, std::vector <std::pair<std::string, int> > *saveTo, int maps);
 
 
 #endif
