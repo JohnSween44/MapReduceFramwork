@@ -77,7 +77,7 @@ void mapper(char **argv){
 
 	if(p == 0)
 		app = 1;
-	else if (p1 = 0)
+	else if (p1 == 0)
 		app = 0;
 	else{
 		std::cout << "Unexpected Input: \"" << argv[1] << "\"\n";
