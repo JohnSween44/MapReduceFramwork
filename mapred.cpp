@@ -1,7 +1,6 @@
 #include <iostream>
 #include <string>
 #include <fstream>
-
 #include "shared_mutex.h"
 #include <algorithm>
 #include <vector>
@@ -30,12 +29,24 @@ typedef struct VAL_PAIR{
         int wordcount;
         int offset;
 }memTracker;
-std::vector<std::pair <std::string, int > > glb_vec;
-void sortAFunc(std::vector<std::pair<std::string, int> > * sortMe);
+
 void mapper(char **argv);
 void wordCounter(vector<string>, shared_mutex_t, memTracker*);
 void reducer(char** argv);
 void wordCombiner(vector< pair<string, int> >, shared_mutex_t , memTracker*);
+void wordCombiner(vector< pair<string, int> > * keyValue);
+
+bool comparePairs(std::pair<std::string, int> p1, std::pair<std::string, int> p2){
+	const char * a = p1.first.c_str();
+	const char * b = p2.first.c_str();
+	int ab = strcmp(a,b);
+	if(ab < 0)
+		return true;
+	else 
+		return false;
+}
+
+
 
 //Global 
 std::vector<std::pair <std::string, int > > glb_vec;
@@ -49,6 +60,7 @@ reducer(argv);
 
 
 void mapper(char **argv){
+
 
         //Variable initialization
         int app;
@@ -82,6 +94,7 @@ void mapper(char **argv){
         }
 
 
+
 	std::ifstream readin;
 	readin.open(input);
 	std::vector < std::string > vec;
@@ -100,12 +113,13 @@ void mapper(char **argv){
         }
 
 	
-        int smfd = shm_open("shared", O_CREAT | O_RDWR, 0666);
+
+        int smfd = shm_open("shared_work", O_CREAT | O_RDWR, 0666);
         ftruncate(smfd, sizeof(memTracker));
         memTracker* sharedstr = (memTracker*)mmap(0, sizeof(memTracker), PROT_WRITE, MAP_SHARED, smfd, 0);
         shared_mutex_t lock = shared_mutex_init("bob");
-     	sharedstr->offset = 0;
-        sharedstr->wordcount = 0;
+	sharedstr->offset = 0;	
+       sharedstr->wordcount = 0;
 
 
 
@@ -136,7 +150,6 @@ void mapper(char **argv){
                 //add temp to 2D vector that will then be used to pair with threads/procs
                 vects.push_back(temp);
         }
-<
 
 
 	
@@ -169,21 +182,39 @@ void mapper(char **argv){
         	while((wpid = wait(&status)) > 0);
         	shared_mutex_destroy(lock);
 	}
-	//Want threads
+	//Want threads}
 	else if(p111 == 0){
-		if(p == 0){
-		//Process wordcount stuff;
-			//pthread_mutex_t mtx;
-			//pthread_t threads[maps];
-			//std::vector <threadInfo *> titrack;
+	//Process wordcount stuff;
+		pthread_mutex_t mtx;
+		pthread_mutex_init(&mtx, NULL);
+		pthread_t threads[num_maps];
+		std::vector <threadInfo *> titrack;
+		for (int i = 0; i < num_maps; i++){
+			threadInfo * tempti = new threadInfo();
+			tempti->readFrom = &vects[i];
+			tempti->mutex = &mtx;
+			titrack.push_back(tempti);
+		       	pthread_t temp;
+			threads[i] = temp;
+        			
+			int a = pthread_create(&threads[i], NULL, &threadWorker, (void *)tempti);
 
-				
-		}
-		else if (p1 == 0){
-			//Process sort stuff
-		}
+        		if (a != 0)
+                		printf("fail\n");
+			}
+	
+		for (int i = 0; i < num_maps; i++)
+        		pthread_join(threads[i], (void **)NULL);
+
+		for (int i = 0; i < num_maps; i++)
+			delete(titrack[i]);
+
+			//sortAFunc(&glb_vec);
+			std::sort(glb_vec.begin(), glb_vec.end(), comparePairs);
+			
+
+		
 	}
-
 }
 
 
@@ -243,7 +274,7 @@ void reducer(char** argv){
 	int p111 = strcmp(argv[2], "threads");
 
 	//create shared mem
-	int smfd = shm_open("shared", O_CREAT | O_RDWR, 0666);
+	int smfd = shm_open("shared_work", O_CREAT | O_RDWR, 0666);
 	ftruncate(smfd, sizeof(memTracker));
 	memTracker* sharedstr = (memTracker*)mmap(0, sizeof(memTracker), PROT_WRITE, MAP_SHARED, smfd, 0);
 	shared_mutex_t lock = shared_mutex_init("bob");
@@ -251,6 +282,9 @@ void reducer(char** argv){
 	sharedstr->wordcount = 0;
 
 	vector< pair<string, int> > pairs;
+	if(p111 == 0){
+		pairs = glb_vec;
+	}
 	if(p11 == 0){
 		//read from shared mem
 		string tempstr = sharedstr->word;
@@ -267,15 +301,14 @@ void reducer(char** argv){
 			const char* count = tokens[r+1].c_str();
 			pairs.push_back(make_pair(tokens[r],atoi(count)));
 		}
-	
-		sortAFunc(&pairs);
+		std::sort(pairs.begin(), pairs.end(), comparePairs);
 		//for(int z = 0; z < pairs.size(); z++){
 		//	cout << pairs[z].first << " " << pairs[z].second << endl;
 		//}
 	}
 		
 	vector< vector< pair<string, int> > > vectsOfPairs;
-	//vectorize shared mem
+	//vectorizer of apirs
 	int l = ceil(pairs.size()/num_reduces);
 	int w = 0;
 	for(int a = 0; a < num_reduces; a++){
@@ -323,14 +356,52 @@ void reducer(char** argv){
 	}
 	//want threads
 	else if(p111 == 0){
-		if(p == 0){
-			//process wordcount	
-		}
-		else if(p1 == 0){
-			//process sort stuff
-		}
-	}
-	
+                if(p == 0){
+                //Process wordcount stuff;
+                        pthread_mutex_t mtx;
+                        pthread_mutex_init(&mtx, NULL);
+                        pthread_t threads[num_reduces];
+                        std::vector <threadInfo *> titrack;
+			std::vector <std::pair< std::string, int> > red; 
+                       for (int i = 0; i < num_reduces; i++){
+                                threadInfo * tempti = new threadInfo();
+                                tempti->rd = &vectsOfPairs[i];
+                                tempti->mutex = &mtx;
+				tempti->wr = &red;
+                                titrack.push_back(tempti);
+                                pthread_t temp;
+                                threads[i] = temp;
+
+                                int a = pthread_create(&threads[i], NULL, &threadWorkerRed, (void *)tempti);
+
+                                if (a != 0)
+                                        printf("fail\n");
+                                }
+
+                        for (int i = 0; i < num_reduces; i++)
+                                pthread_join(threads[i], (void **)NULL);
+
+                        for (int i = 0; i < num_reduces; i++)
+                                delete(titrack[i]);
+		
+	//		sortAFunc(&red);
+	//
+			std::sort(red.begin(), red.end(), comparePairs);
+			wordCombiner(&red);			
+
+			for(int i = 0; i < red.size(); i++){
+			std::cout << red[i].first << ", " << red[i].second << std::endl;
+			}
+
+
+                }//end if
+
+
+
+                else if (p1 == 0){
+                   //     Thread sort stuff
+                }
+        }	
 	if(p11 == 0){
 		string tempstr2 = sharedstr->word;
 		vector<string> tokens2;
@@ -348,7 +419,7 @@ void reducer(char** argv){
 		}
 	
 		//one more outer reduce
-		sortAFunc(&pairs2);
+		std::sort(pairs2.begin(), pairs2.end(), comparePairs);
 		for(int n = 0; n < pairs2.size(); n++){
 			//cout << keyValue.size() << endl;
 			for(int q = 0; q < pairs2.size(); q++){
@@ -360,7 +431,6 @@ void reducer(char** argv){
 			}
 		}
 		//print to screen/write to file
-		sortAFunc(&pairs2);
 		for(int j = 0; j < pairs2.size(); j++){
 			cout << pairs2[j].first << " " <<  pairs2[j].second << endl;
 		} 
@@ -406,11 +476,28 @@ void wordCombiner(vector< pair<string, int> > keyValue, shared_mutex_t lock, mem
 
 
 
-void sortAFunc(std::vector<std::pair<std::string, int> > * sortMe){
-	for(int i = 0; i < sortMe->size() - 1; i++){
-		for(int j = 0; j < sortMe->size(); j++){
-			if(sortMe->at(i).first.compare(sortMe->at(j).first) < 0 )
-				std::swap(sortMe->at(i), sortMe->at(j));
+
+//-------------------------------
+
+
+void wordCombiner(vector< pair<string, int> > * keyValue){
+	
+	for(int n = 0; n < keyValue->size(); n++){
+		for(int q = 0; q < keyValue->size(); q++){
+			if((keyValue->at(n).first.compare(keyValue->at(q).first) == 0 ) && (n != q)){
+				keyValue->at(n).second += keyValue->at(q).second;
+				keyValue->erase(keyValue->begin()+q);
+				q--;
+			}
 		}
 	}
+
 }
+
+
+
+
+
+
+
+
