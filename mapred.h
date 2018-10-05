@@ -18,7 +18,18 @@
 #ifndef MAPRED_H
 #define MAPRED_H
 
-void threadMap(std::vector< std::vector <std::string > > vectorIn, std::vector <std::pair<std::string, int> > *saveTo, int maps);
+void * threadWorker(void *arg);
+
+
+
+
+typedef struct _threadInfo {
+	std::vector <std::string >  * readFrom;
+	pthread_mutex_t * mutex; 
+}threadInfo;
+
+
+extern std::vector<std::pair <std::string, int > > glb_vec;
 
 
 #endif
