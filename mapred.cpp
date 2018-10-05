@@ -1,9 +1,38 @@
-#include "mapred.h"
+#include <iostream>
+#include <string>
+#include <fstream>
+#include <algorithm>
+#include <vector>
+#include <utility>
+#include <math.h>
+#include <cstdlib>
+#include <cstdio>
+#include <unistd.h>
+#include <sys/wait.h>
+#include <sys/mman.h>
+#include <sys/shm.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+#include <string.h>
 
 
-std::vector <std::vector <std::string> > vectorizer(std::ifstream *in, std::vector < std::string > *vectorIn ,int numMaps, int numReducers);
+void sortAFunc(std::vector<std::pair<std::string, int> > * sortMe);
+void mapper(char **argv);
+
+//Global 
+std::vector<std::pair <std::string, int > > glb_vec;
 
 int main(int argc, char ** argv){
+
+mapper(argv);
+
+}
+
+
+
+
+
+void mapper(char **argv){
 
         //Variable initialization
         int app;
@@ -37,116 +66,53 @@ int main(int argc, char ** argv){
         }
 
 
-
 	std::ifstream readin;
-        readin.open(input);
-
-        //Vector of pairs to read into
-        std::vector < std::string > totList;
-	
-	//Where tokenzied strings will live
-	std::vector< std::vector <std::string > > storedList = vectorizer(&readin, &totList, num_maps, num_reduces); ;	
-	
-	//closing input stream
-	readin.close();
-
-	//Where paired...pairs will live
-	std::vector< std::pair<std::string, int> > pairedValues;
-
-	std::sort(pairedValues.begin(), pairedValues.end());
-		
-	if(impl == 0){
-		threadMap(storedList, &pairedValues, storedList.size()); 
-		printf("storedSize: %d\n", pairedValues.size());
-		for(int i = 0; i < pairedValues.size(); i++){
-			std::cout << pairedValues[i].first << ", " << pairedValues[i].second << std::endl;	
-		}
-
-
-
-		//Reduce w threads
-	}
-	else if (impl == 1){
-		//Map w procs
-		//Reduce w procs
-	}
-
-
-        return 0;
-}
-
-
-
-/*
-Working as of 9/21/18
-Input: 
-        std::ifstream * in
-                - File input stream, already opened.
-        std::vector <std::string> * vectorIn
-                - External vector that function will read words from file into
-Output:
-        -Tokenzied vector of all the words present in file passed in to function.
-        -vector of vectors of tokenized input
-*/
-std::vector < std::vector <std::string> > vectorizer(std::ifstream *in, std::vector < std::string > *vectorIn ,int numMaps, int numReducers){
-
-        //Open file input stream and set local vars for input and vector;
-        std::ifstream * mapRead = in;
-        std::vector < std::string > * vec = vectorIn;
+	readin.open(input);
+	std::vector < std::string > vec;
 
         std::string a;
+        std::string holdMe;
 
-        
-        while(*in >> a){
+
+        while(readin >> a){
                 char temp[a.length()+1];
                 strcpy(temp, a.c_str());
-                char * wo = strtok(temp, " .,:;?!--");
+                char * wo = strtok(temp, " .,:;?!-");
                 std::string eff = wo;
                 std::transform(eff.begin(), eff.end(), eff.begin(), ::tolower);
-                vec->push_back( eff );
-
+                vec.push_back( eff );
         }
 
 
-
-
-        //std::sort(vec->begin(), vec->end());
-
-        //the following block of code is to partion the vector of all text to semi-evenly 
-        //filled sub vectors, these sub vectors are then stored into a vector
-        //first step: use ceiling function to find at most how many elements each vector hass
-        int numElements = ceil(vec->size()/numMaps);
+        int numElements = ceil(vec.size()/num_maps);
         //intilizes 2D vector 
         std::vector< std::vector<std::string> > vects;
         int vecCurrentElement = 0;
         //the number of sub-vectors is the number of mappers loop to create a sub vector for each mapper
-        for(int i = 0; i < numMaps; i++){
+        for(int i = 0; i < num_maps; i++){
                 //initilze a temp vector to hold subbector
                 std::vector<std::string> temp;
                 //first check how many subvectors get one extra element (i.e. distributing remaining elements 
                 //among the first n elements
-                if(i < (vec->size() % numMaps)){
+                if(i < (vec.size() % num_maps)){
                         for(int t = 0; t < numElements+1; t++){
-                                temp.push_back((*vec)[vecCurrentElement]);
+                                temp.push_back(vec[vecCurrentElement]);
                                 vecCurrentElement++;
                         }
                 }
                  //otherwise just add apropriate number of elements
                 else{
                         for(int t = 0; t < numElements; t++){
-                                temp.push_back((*vec)[vecCurrentElement]);
+                                temp.push_back(vec[vecCurrentElement]);
                                 vecCurrentElement++;
                         }
                 }
                 //add temp to 2D vector that will then be used to pair with threads/procs
                 vects.push_back(temp);
         }
-	return vects;
-
-}
 
 
-/*
+	
         //test printer for checking partions
         for(int i = 0; i < vects.size(); i++){
                 for(int t = 0; t < vects[i].size(); t++){
@@ -154,31 +120,45 @@ std::vector < std::vector <std::string> > vectorizer(std::ifstream *in, std::vec
                 }
                 std::cout << "------------------------------" << i << std::endl;
         }
+	
+
+	//Want process
+	if(p11 == 0){
+		//Want wordcount
+		if(p == 0){
+			//Process wordcount stuff;
+		}
+		else if (p1 == 0){
+			//Process sort stuff
+		}
+
+	}
+	//Want threads
+	else if(p111 = 0){
+		if(p == 0){
+		//Process wordcount stuff;
+			pthread_mutex_t mtx;
+			pthread_t threads[maps];
+			std::vector <threadInfo *> titrack;
+
+				
+		}
+		else if (p1 == 0){
+			//Process sort stuff
+		}
+	}
+
+}
 
 
-         pid_t wpid;
-                key_t key = ftok("shmfle",100);
-                int shmid = shmget(key,1024,0666|IPC_CREAT);
-                char *str = (char*) shmat(shmid,(void*)0,0);
-                sprintf(str,"i have no idea if this works");
-                //void *ptr = mmap(0, size, PROT_WRITE, MAP_SHARED, smfd, 0);
-                for(int i = 0; i < numMaps; i++){
-                        pid_t pid = fork();
-                        if(pid == 0){
-                                std::vector< std::pair<std::string, int> > keyValue;
-                                for(int j = 0; j < vects[i].size(); j++){
-                                        keyValue.push_back(make_pair(vects[i][j], 1));
-                                }
-                                std::cout << "chiled " << getpid() << " parent " << getppid() << std::endl;
-                     //           for(int i = 0; i < keyValue.size(); i++){
-                                        //std::cout << keyValue[i].first << ", " << keyValue[i].second << std::endl;
-                       //         }
-                        exit(0);
-                        }
-                }
-                int status = 0;
-                while((wpid = wait(&status)) > 0);
+void sortAFunc(std::vector<std::pair<std::string, int> > * sortMe){
 
-*/
+for(int i = 0; i < sortMe->size() - 1; i++){
+	for(int j = 0; j < sortMe->size(); j++){
+		if(sortMe->at(i).first.compare(sortMe->at(j).first) <  0 )
+			std::swap(sortMe->at(i), sortMe->at(j));
+	}
+}
 
 
+}
