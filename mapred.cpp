@@ -1,6 +1,7 @@
 #include <iostream>
 #include <string>
 #include <fstream>
+
 #include "shared_mutex.h"
 #include <algorithm>
 #include <vector>
@@ -19,6 +20,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <math.h>
+#include "mapred.h"
 
 
 using namespace std;
@@ -28,7 +30,7 @@ typedef struct VAL_PAIR{
         int wordcount;
         int offset;
 }memTracker;
-
+std::vector<std::pair <std::string, int > > glb_vec;
 void sortAFunc(std::vector<std::pair<std::string, int> > * sortMe);
 void mapper(char **argv);
 void wordCounter(vector<string>, shared_mutex_t, memTracker*);
@@ -44,9 +46,6 @@ mapper(argv);
 reducer(argv);
 
 }
-
-
-
 
 
 void mapper(char **argv){
@@ -99,6 +98,7 @@ void mapper(char **argv){
                 std::transform(eff.begin(), eff.end(), eff.begin(), ::tolower);
                 vec.push_back( eff );
         }
+
 	
         int smfd = shm_open("shared", O_CREAT | O_RDWR, 0666);
         ftruncate(smfd, sizeof(memTracker));
@@ -106,6 +106,9 @@ void mapper(char **argv){
         shared_mutex_t lock = shared_mutex_init("bob");
      	sharedstr->offset = 0;
         sharedstr->wordcount = 0;
+
+
+
 
         int numElements = ceil(vec.size()/num_maps);
         //intilizes 2D vector 
@@ -133,6 +136,7 @@ void mapper(char **argv){
                 //add temp to 2D vector that will then be used to pair with threads/procs
                 vects.push_back(temp);
         }
+<
 
 
 	
@@ -182,12 +186,14 @@ void mapper(char **argv){
 
 }
 
+
 void wordCounter(vector<string> vect, shared_mutex_t lock, memTracker *sharedstr){
+
 
         vector< pair<string, int> > keyValue;
         for(int j = 0; j < vect.size(); j++){
                 keyValue.push_back(make_pair(vect[j], 1));
-        }
+        }	
 
         for(int n = 0; n < keyValue.size(); n++){
                 for(int q = 0; q < keyValue.size(); q++){
