@@ -46,7 +46,16 @@ bool comparePairs(std::pair<std::string, int> p1, std::pair<std::string, int> p2
 		return false;
 }
 
+bool comparePairsInts(std::pair<std::string, int> p1, std::pair<std::string, int> p2){
+	const char * a = p1.first.c_str();
+	const char * b = p2.first.c_str();
 
+
+	int a1 = atoi(a);
+	int b1 = atoi(b);
+	
+	return a1 < b1;
+}
 
 //Global 
 std::vector<std::pair <std::string, int > > glb_vec;
@@ -55,6 +64,8 @@ int main(int argc, char ** argv){
 
 mapper(argv);
 reducer(argv);
+
+printf("Stored Size: %d\n", glb_vec.size());
 
 }
 
@@ -210,8 +221,10 @@ void mapper(char **argv){
 			delete(titrack[i]);
 
 			//sortAFunc(&glb_vec);
-			std::sort(glb_vec.begin(), glb_vec.end(), comparePairs);
-			
+	if(p == 0)	
+		std::sort(glb_vec.begin(), glb_vec.end(), comparePairs);
+	else if(p1 == 0)
+		std::sort(glb_vec.begin(), glb_vec.end(), comparePairsInts);				
 
 		
 	}
@@ -384,11 +397,9 @@ void reducer(char** argv){
                         for (int i = 0; i < num_reduces; i++)
                                 delete(titrack[i]);
 		
-	//		sortAFunc(&red);
-	//
 			std::sort(red.begin(), red.end(), comparePairs);
 			wordCombiner(&red);			
-
+			glb_vec = red;
 			for(int i = 0; i < red.size(); i++){
 			std::cout << red[i].first << ", " << red[i].second << std::endl;
 			}
@@ -399,7 +410,40 @@ void reducer(char** argv){
 
 
                 else if (p1 == 0){
-                   //     Thread sort stuff
+                   pthread_mutex_t mtx;
+                        pthread_mutex_init(&mtx, NULL);
+                        pthread_t threads[num_reduces];
+                        std::vector <threadInfo *> titrack;
+			std::vector <std::pair< std::string, int> > red; 
+                       for (int i = 0; i < num_reduces; i++){
+                                threadInfo * tempti = new threadInfo();
+                                tempti->rd = &vectsOfPairs[i];
+                                tempti->mutex = &mtx;
+				tempti->wr = &red;
+                                titrack.push_back(tempti);
+                                pthread_t temp;
+                                threads[i] = temp;
+
+                                int a = pthread_create(&threads[i], NULL, &threadWorkerRed, (void *)tempti);
+
+                                if (a != 0)
+                                        printf("fail\n");
+                                }
+
+                        for (int i = 0; i < num_reduces; i++)
+                                pthread_join(threads[i], (void **)NULL);
+
+                        for (int i = 0; i < num_reduces; i++)
+                                delete(titrack[i]);
+		
+			std::sort(red.begin(), red.end(), comparePairs);
+			wordCombiner(&red);
+			
+			for(int i = 0; i < red.size(); i++){
+			std::cout << red[i].first << std::endl;
+			}
+
+			 
                 }
         }	
 	if(p11 == 0){
@@ -436,6 +480,27 @@ void reducer(char** argv){
 		} 
 	}
 	shared_mutex_destroy(lock);
+
+	if(p1==0){
+
+		std::ofstream out;
+		out.open(output);
+		for(int i = 0; i < glb_vec.size(); i++){
+			out << glb_vec[i].first << std::endl;
+		}
+		out.close();
+	
+	}
+
+	else if(p == 0){
+		std::ofstream out;
+		out.open(output);
+		for(int i = 0; i < glb_vec.size(); i++){
+			out << glb_vec[i].first << "\t\t\t" << glb_vec[i].second  << std::endl;
+		}
+		out.close();
+
+	}
 }
 
 
