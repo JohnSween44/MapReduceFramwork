@@ -19,7 +19,6 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <math.h>
-#include "mapred.h"
 
 
 using namespace std;
@@ -30,9 +29,15 @@ typedef struct VAL_PAIR{
         int offset;
 }memTracker;
 
+
+
+void numCounter(vector< pair<string, int> >, shared_mutex_t, memTracker*);
 void mapper(char **argv);
 void wordCounter(vector<string>, shared_mutex_t, memTracker*);
+void numCounter(vector<string>, shared_mutex_t, memTracker*);
 void reducer(char** argv);
+bool comparePairsInts(std::pair<std::string, int>, std::pair<std::string, int>);
+bool comparePairs(std::pair<std::string, int>, std::pair<std::string, int>);
 void wordCombiner(vector< pair<string, int> >, shared_mutex_t , memTracker*);
 void wordCombiner(vector< pair<string, int> > * keyValue);
 
@@ -57,8 +62,29 @@ bool comparePairsInts(std::pair<std::string, int> p1, std::pair<std::string, int
 	return a1 < b1;
 }
 
+
 //Global 
 std::vector<std::pair <std::string, int > > glb_vec;
+bool comparePairs(std::pair<std::string, int> p1, std::pair<std::string, int> p2){
+	const char * a = p1.first.c_str();
+	const char * b = p2.first.c_str();
+	int ab = strcmp(a,b);
+	if(ab < 0)
+		return true;
+	else 
+		return false;
+}
+
+bool comparePairsInts(std::pair<std::string, int> p1, std::pair<std::string, int> p2){
+	const char * a = p1.first.c_str();
+	const char * b = p2.first.c_str();
+
+
+	int a1 = atoi(a);
+	int b1 = atoi(b);
+	
+	return a1 < b1;
+}
 
 int main(int argc, char ** argv){
 
@@ -68,6 +94,9 @@ reducer(argv);
 printf("Stored Size: %d\n", glb_vec.size());
 
 }
+
+
+
 
 
 void mapper(char **argv){
@@ -122,7 +151,6 @@ void mapper(char **argv){
                 std::transform(eff.begin(), eff.end(), eff.begin(), ::tolower);
                 vec.push_back( eff );
         }
-
 	
 
         int smfd = shm_open("shared_work", O_CREAT | O_RDWR, 0666);
@@ -131,9 +159,6 @@ void mapper(char **argv){
         shared_mutex_t lock = shared_mutex_init("bob");
 	sharedstr->offset = 0;	
        sharedstr->wordcount = 0;
-
-
-
 
         int numElements = ceil(vec.size()/num_maps);
         //intilizes 2D vector 
@@ -185,6 +210,7 @@ void mapper(char **argv){
 				}
 				else if (p1 == 0){
 					//Process sort stuff
+					numCounter(vects[i], lock, sharedstr);
 				}
 			
                		}
@@ -230,14 +256,12 @@ void mapper(char **argv){
 	}
 }
 
-
 void wordCounter(vector<string> vect, shared_mutex_t lock, memTracker *sharedstr){
-
 
         vector< pair<string, int> > keyValue;
         for(int j = 0; j < vect.size(); j++){
                 keyValue.push_back(make_pair(vect[j], 1));
-        }	
+        }
 
         for(int n = 0; n < keyValue.size(); n++){
                 for(int q = 0; q < keyValue.size(); q++){
@@ -268,6 +292,36 @@ void wordCounter(vector<string> vect, shared_mutex_t lock, memTracker *sharedstr
                 pthread_mutex_unlock(lock.ptr);
         }
         exit(0);
+
+}
+
+void numCounter(vector<string> numbers, shared_mutex_t lock, memTracker* sharedstr){
+	
+	
+	vector< pair<string, int> > keyValue;
+        for(int j = 0; j < numbers.size(); j++){
+                keyValue.push_back(make_pair(numbers[j], 1));
+        }
+	
+	sort(keyValue.begin(), keyValue.end(), comparePairsInts);
+
+	for(int i = 0; i < keyValue.size(); i++){
+		const char *temp = keyValue[i].first.c_str();
+                char intstr[500];
+                sprintf(intstr,"%d", keyValue[i].second);
+                char *writedata = (char*)malloc(strlen(temp) + strlen(intstr));
+                sprintf(writedata,"%s %s",temp,intstr);
+		pthread_mutex_lock(lock.ptr);
+	
+		int offset = sharedstr->offset;
+		sprintf(&sharedstr->word[offset], " %s", writedata);
+		sharedstr->offset += (strlen(writedata)+1);
+		sharedstr->wordcount++;
+
+		pthread_mutex_unlock(lock.ptr);
+	}
+	
+	exit(0);
 
 }
 
@@ -314,7 +368,15 @@ void reducer(char** argv){
 			const char* count = tokens[r+1].c_str();
 			pairs.push_back(make_pair(tokens[r],atoi(count)));
 		}
-		std::sort(pairs.begin(), pairs.end(), comparePairs);
+	
+		if(p == 0){
+			sort(pairs.begin(), pairs.end(), comparePairs);
+		}
+		if(p1 == 0){
+			sort(pairs.begin(), pairs.end(), comparePairsInts);
+		}
+
+
 		//for(int z = 0; z < pairs.size(); z++){
 		//	cout << pairs[z].first << " " << pairs[z].second << endl;
 		//}
@@ -361,6 +423,7 @@ void reducer(char** argv){
 				}
 				else if(p1 == 0){
 					//process sort
+					numCounter(vectsOfPairs[i], lock, sharedstr);
 				}
 			}	
 		}
@@ -461,22 +524,34 @@ void reducer(char** argv){
 			const char* count = tokens2[t+1].c_str();
 			pairs2.push_back(make_pair(tokens2[t],atoi(count)));
 		}
-	
+			
 		//one more outer reduce
-		std::sort(pairs2.begin(), pairs2.end(), comparePairs);
-		for(int n = 0; n < pairs2.size(); n++){
-			//cout << keyValue.size() << endl;
-			for(int q = 0; q < pairs2.size(); q++){
-				if(pairs2[n].first == pairs2[q].first && n != q){
-					pairs2[n].second += pairs2[q].second;
-					pairs2.erase(pairs2.begin()+q);
-					q--;
+
+		if(p == 0){
+			for(int n = 0; n < pairs2.size(); n++){
+				//cout << keyValue.size() << endl;
+				for(int q = 0; q < pairs2.size(); q++){
+					if(pairs2[n].first == pairs2[q].first && n != q){
+						pairs2[n].second += pairs2[q].second;
+						pairs2.erase(pairs2.begin()+q);
+						q--;
+					}
 				}
 			}
+			sort(pairs2.begin(), pairs2.end(), comparePairs);
 		}
 		//print to screen/write to file
+		if(p1 == 0){
+			sort(pairs2.begin(), pairs2.end(), comparePairsInts);
+		}
+
 		for(int j = 0; j < pairs2.size(); j++){
-			cout << pairs2[j].first << " " <<  pairs2[j].second << endl;
+			if(p == 0){
+				cout << pairs2[j].first << " " <<  pairs2[j].second << endl;
+			}
+			if(p1 == 0){
+				cout << pairs2[j].first <<  endl;
+			}
 		} 
 	}
 	shared_mutex_destroy(lock);
@@ -504,7 +579,7 @@ void reducer(char** argv){
 }
 
 
-void wordCombiner(vector< pair<string, int> > keyValue, shared_mutex_t lock, memTracker *sharedstr){
+void wordCombiner(vector< pair<string, int> > keyValue, shared_mutex_t lock, memTracker* sharedstr){
 	
 	for(int n = 0; n < keyValue.size(); n++){
 		for(int q = 0; q < keyValue.size(); q++){
@@ -539,6 +614,30 @@ void wordCombiner(vector< pair<string, int> > keyValue, shared_mutex_t lock, mem
 	exit(0);
 }
 
+void numCounter(vector< pair<string, int> > numbers, shared_mutex_t lock, memTracker* sharedstr){
+	sort(numbers.begin(), numbers.end(), comparePairsInts);
+	
+	for(int i = 0; i < numbers.size(); i++){
+		
+		const char *temp = numbers[i].first.c_str();
+                char intstr[500];
+                sprintf(intstr,"%d", numbers[i].second);
+                char *writedata = (char*)malloc(strlen(temp) + strlen(intstr));
+                sprintf(writedata,"%s %s",temp,intstr);
+		pthread_mutex_lock(lock.ptr);
+	
+		int offset = sharedstr->offset;
+		sprintf(&sharedstr->word[offset], " %s", writedata);
+		sharedstr->offset += (strlen(writedata)+1);
+		sharedstr->wordcount++;
+
+		pthread_mutex_unlock(lock.ptr);
+	}
+	
+	exit(0);
+
+}
+
 
 
 
@@ -558,11 +657,4 @@ void wordCombiner(vector< pair<string, int> > * keyValue){
 	}
 
 }
-
-
-
-
-
-
-
 
