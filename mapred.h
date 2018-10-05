@@ -18,13 +18,18 @@
 #ifndef MAPRED_H
 #define MAPRED_H
 
-void threadMap(std::vector< std::vector <std::string > > vectorIn, std::vector <std::pair<std::string, int> > *saveTo, int maps);
+void * threadWorker(void *arg);
 
-std::vector <std::vector <std::string> > vectorizer(std::ifstream *in, std::vector < std::string > *vectorIn ,int numMaps, int numReducers);
 
-void initcombine(int type, std::vector< std::pair<std::string, int> > * listIn);
 
-void reduce(int type, int numred, std::vector< std::pair<std::string, int> > * mapon);
+
+typedef struct _threadInfo {
+	std::vector <std::string >  * readFrom;
+	pthread_mutex_t * mutex; 
+}threadInfo;
+
+
+extern std::vector<std::pair <std::string, int > > glb_vec;
 
 
 #endif

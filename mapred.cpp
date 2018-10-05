@@ -14,7 +14,7 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <string.h>
-
+#include "mapred.h"
 
 void sortAFunc(std::vector<std::pair<std::string, int> > * sortMe);
 void mapper(char **argv);
@@ -24,7 +24,16 @@ std::vector<std::pair <std::string, int > > glb_vec;
 
 int main(int argc, char ** argv){
 
+
 mapper(argv);
+std::cout << "Stored Size: " << glb_vec.size() << std::endl;
+sortAFunc(&glb_vec);
+
+        for(int i = 0; i < glb_vec.size(); i++){
+        	std::cout << glb_vec[i].first << " " << glb_vec[i].second << std::endl;	        
+	}
+
+
 
 }
 
@@ -112,7 +121,7 @@ void mapper(char **argv){
         }
 
 
-	
+/*	
         //test printer for checking partions
         for(int i = 0; i < vects.size(); i++){
                 for(int t = 0; t < vects[i].size(); t++){
@@ -120,7 +129,7 @@ void mapper(char **argv){
                 }
                 std::cout << "------------------------------" << i << std::endl;
         }
-	
+*/	
 
 	//Want process
 	if(p11 == 0){
@@ -134,19 +143,48 @@ void mapper(char **argv){
 
 	}
 	//Want threads
-	else if(p111 = 0){
+	else if(p111 == 0){
 		if(p == 0){
 		//Process wordcount stuff;
 			pthread_mutex_t mtx;
-			pthread_t threads[maps];
+			pthread_mutex_init(&mtx, NULL);
+			pthread_t threads[num_maps];
 			std::vector <threadInfo *> titrack;
+			for (int i = 0; i < num_maps; i++){
+				threadInfo * tempti = new threadInfo();
+				tempti->readFrom = &vects[i];
+				tempti->mutex = &mtx;
+				titrack.push_back(tempti);
+		        	pthread_t temp;
+				threads[i] = temp;
+        			
+				int a = pthread_create(&threads[i], NULL, &threadWorker, (void *)tempti);
 
-				
-		}
+        			if (a != 0)
+                			printf("fail\n");
+				}
+	
+			for (int i = 0; i < num_maps; i++)
+        			pthread_join(threads[i], (void **)NULL);
+
+			for (int i = 0; i < num_maps; i++)
+				delete(titrack[i]);
+		}//end if
+
+
+
 		else if (p1 == 0){
-			//Process sort stuff
+			//Thread sort stuff
 		}
 	}
+
+}
+
+
+
+void reducer(char ** argv){
+
+
 
 }
 
@@ -155,7 +193,7 @@ void sortAFunc(std::vector<std::pair<std::string, int> > * sortMe){
 
 for(int i = 0; i < sortMe->size() - 1; i++){
 	for(int j = 0; j < sortMe->size(); j++){
-		if(sortMe->at(i).first.compare(sortMe->at(j).first) <  0 )
+		if((sortMe->at(i).first.compare(sortMe->at(j).first) <  0) && i != j )
 			std::swap(sortMe->at(i), sortMe->at(j));
 	}
 }
