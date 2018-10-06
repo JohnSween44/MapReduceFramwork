@@ -1,66 +1,7 @@
-#include <iostream>
-#include <string>
-#include <fstream>
-#include "shared_mutex.h"
-#include <algorithm>
-#include <vector>
-#include <utility>
-#include <sys/stat.h>
-#include <string.h>
-#include <bits/stdc++.h>
-#include <sys/wait.h>
-#include <sys/mman.h>
-#include <sys/types.h>
-#include <stdio.h>
-#include <sys/stat.h>
-#include <cstdlib>
-#include <fcntl.h>
-#include <cstdio>
-#include <stdlib.h>
-#include <unistd.h>
-#include <math.h>
+#include "mapred.h"
 
 
 using namespace std;
-
-typedef struct VAL_PAIR{
-        char word[5000000];
-        int wordcount;
-        int offset;
-}memTracker;
-
-
-
-void numCounter(vector< pair<string, int> >, shared_mutex_t, memTracker*);
-void mapper(char **argv);
-void wordCounter(vector<string>, shared_mutex_t, memTracker*);
-void numCounter(vector<string>, shared_mutex_t, memTracker*);
-void reducer(char** argv);
-bool comparePairsInts(std::pair<std::string, int>, std::pair<std::string, int>);
-bool comparePairs(std::pair<std::string, int>, std::pair<std::string, int>);
-void wordCombiner(vector< pair<string, int> >, shared_mutex_t , memTracker*);
-void wordCombiner(vector< pair<string, int> > * keyValue);
-
-bool comparePairs(std::pair<std::string, int> p1, std::pair<std::string, int> p2){
-	const char * a = p1.first.c_str();
-	const char * b = p2.first.c_str();
-	int ab = strcmp(a,b);
-	if(ab < 0)
-		return true;
-	else 
-		return false;
-}
-
-bool comparePairsInts(std::pair<std::string, int> p1, std::pair<std::string, int> p2){
-	const char * a = p1.first.c_str();
-	const char * b = p2.first.c_str();
-
-
-	int a1 = atoi(a);
-	int b1 = atoi(b);
-	
-	return a1 < b1;
-}
 
 
 //Global 
@@ -90,8 +31,6 @@ int main(int argc, char ** argv){
 
 mapper(argv);
 reducer(argv);
-
-printf("Stored Size: %d\n", glb_vec.size());
 
 }
 
@@ -218,8 +157,7 @@ void mapper(char **argv){
        		int status = 0;
         	while((wpid = wait(&status)) > 0);
         	shared_mutex_destroy(lock);
-	}
-	//Want threads}
+	}	
 	else if(p111 == 0){
 	//Process wordcount stuff;
 		pthread_mutex_t mtx;
@@ -254,6 +192,7 @@ void mapper(char **argv){
 
 		
 	}
+
 }
 
 void wordCounter(vector<string> vect, shared_mutex_t lock, memTracker *sharedstr){
@@ -463,9 +402,9 @@ void reducer(char** argv){
 			std::sort(red.begin(), red.end(), comparePairs);
 			wordCombiner(&red);			
 			glb_vec = red;
-			for(int i = 0; i < red.size(); i++){
-			std::cout << red[i].first << ", " << red[i].second << std::endl;
-			}
+			//for(int i = 0; i < red.size(); i++){
+			//std::cout << red[i].first << ", " << red[i].second << std::endl;
+			//}
 
 
                 }//end if
@@ -502,9 +441,6 @@ void reducer(char** argv){
 			std::sort(red.begin(), red.end(), comparePairs);
 			wordCombiner(&red);
 			
-			for(int i = 0; i < red.size(); i++){
-			std::cout << red[i].first << std::endl;
-			}
 
 			 
                 }
@@ -527,7 +463,7 @@ void reducer(char** argv){
 			
 		//one more outer reduce
 
-		if(p == 0){
+		if(p == 0 && p11 == 0){
 			for(int n = 0; n < pairs2.size(); n++){
 				//cout << keyValue.size() << endl;
 				for(int q = 0; q < pairs2.size(); q++){
@@ -544,18 +480,23 @@ void reducer(char** argv){
 		if(p1 == 0){
 			sort(pairs2.begin(), pairs2.end(), comparePairsInts);
 		}
-
+	
+		ofstream out;
+		out.open(output);
+		out.flush();
 		for(int j = 0; j < pairs2.size(); j++){
 			if(p == 0){
-				cout << pairs2[j].first << " " <<  pairs2[j].second << endl;
+				out << pairs2[j].first << " " <<  pairs2[j].second << endl;
 			}
 			if(p1 == 0){
-				cout << pairs2[j].first <<  endl;
+				out << pairs2[j].first <<  endl;
 			}
-		} 
+		}
+		
+		out.close(); 
 	}
 	shared_mutex_destroy(lock);
-
+if(p111 == 0){
 	if(p1==0){
 
 		std::ofstream out;
@@ -571,10 +512,10 @@ void reducer(char** argv){
 		std::ofstream out;
 		out.open(output);
 		for(int i = 0; i < glb_vec.size(); i++){
-			out << glb_vec[i].first << "\t\t\t" << glb_vec[i].second  << std::endl;
+			out << glb_vec[i].first << "	" << glb_vec[i].second  << std::endl;
 		}
 		out.close();
-
+}
 	}
 }
 
