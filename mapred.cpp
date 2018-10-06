@@ -85,11 +85,22 @@ void mapper(char **argv){
         while(readin >> a){
                 char temp[a.length()+1];
                 strcpy(temp, a.c_str());
-                char * wo = strtok(temp, " .,:;?!-");
-                std::string eff = wo;
-                std::transform(eff.begin(), eff.end(), eff.begin(), ::tolower);
-                vec.push_back( eff );
-        }
+                char * wo = strtok(temp, " .,:;!-");
+                //std::cout << a << std::endl;
+		while(wo != NULL){
+			std::string eff = wo;
+                	
+			if(eff != ")" ){
+				if(eff != "\'"){
+					std::transform(eff.begin(), eff.end(), eff.begin(), ::tolower);
+					vec.push_back( eff );
+
+				}
+			}
+			wo = strtok(NULL, " .,:;?!-");
+		}
+
+	}
 	
 
         int smfd = shm_open("shared_work", O_CREAT | O_RDWR, 0666);
@@ -158,6 +169,7 @@ void mapper(char **argv){
         	while((wpid = wait(&status)) > 0);
         	shared_mutex_destroy(lock);
 	}	
+	//Want threads}
 	else if(p111 == 0){
 	//Process wordcount stuff;
 		pthread_mutex_t mtx;
@@ -402,10 +414,6 @@ void reducer(char** argv){
 			std::sort(red.begin(), red.end(), comparePairs);
 			wordCombiner(&red);			
 			glb_vec = red;
-			//for(int i = 0; i < red.size(); i++){
-			//std::cout << red[i].first << ", " << red[i].second << std::endl;
-			//}
-
 
                 }//end if
 
@@ -440,9 +448,6 @@ void reducer(char** argv){
 		
 			std::sort(red.begin(), red.end(), comparePairs);
 			wordCombiner(&red);
-			
-
-			 
                 }
         }	
 	if(p11 == 0){
