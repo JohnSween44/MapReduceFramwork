@@ -491,7 +491,7 @@ void reducer(char** argv){
 		out.flush();
 		for(int j = 0; j < pairs2.size(); j++){
 			if(p == 0){
-				out << pairs2[j].first << " " <<  pairs2[j].second << endl;
+				out << pairs2[j].first << "\t" <<  pairs2[j].second << endl;
 			}
 			if(p1 == 0){
 				out << pairs2[j].first <<  endl;
