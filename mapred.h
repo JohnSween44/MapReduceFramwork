@@ -15,6 +15,7 @@
 #include <sys/stat.h>
 #include <cstdlib>
 #include <fcntl.h>
+#include <ctype.h>
 #include <cstdio>
 #include <stdlib.h>
 #include <unistd.h>
@@ -51,6 +52,7 @@ typedef struct _threadInfo {
 	std::vector <std::pair<std::string, int> >  * rd;
 	std::vector <std::pair<std::string, int > > * wr;
 	pthread_mutex_t * mutex; 	
+	int ind; //0 wordcount 1 sort
 }threadInfo;
 
 

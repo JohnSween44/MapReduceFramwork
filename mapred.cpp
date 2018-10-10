@@ -90,12 +90,9 @@ void mapper(char **argv){
 		while(wo != NULL){
 			std::string eff = wo;
                 	
-			if(eff != ")" ){
-				if(eff != "\'"){
+			if((eff.length() == 1 && isalpha(wo[0])) || eff.length() > 1){
 					std::transform(eff.begin(), eff.end(), eff.begin(), ::tolower);
 					vec.push_back( eff );
-
-				}
 			}
 			wo = strtok(NULL, " .,:;?!-");
 		}
@@ -180,6 +177,10 @@ void mapper(char **argv){
 			threadInfo * tempti = new threadInfo();
 			tempti->readFrom = &vects[i];
 			tempti->mutex = &mtx;
+			if(p==0)
+				tempti->ind = 0;
+			else if(p1==0)
+				tempti->ind = 1;
 			titrack.push_back(tempti);
 		       	pthread_t temp;
 			threads[i] = temp;
@@ -395,7 +396,8 @@ void reducer(char** argv){
                                 tempti->rd = &vectsOfPairs[i];
                                 tempti->mutex = &mtx;
 				tempti->wr = &red;
-                                titrack.push_back(tempti);
+                		tempti->ind = 0;
+		                titrack.push_back(tempti);
                                 pthread_t temp;
                                 threads[i] = temp;
 
@@ -430,6 +432,7 @@ void reducer(char** argv){
                                 tempti->rd = &vectsOfPairs[i];
                                 tempti->mutex = &mtx;
 				tempti->wr = &red;
+				tempti->ind = 1;
                                 titrack.push_back(tempti);
                                 pthread_t temp;
                                 threads[i] = temp;
@@ -446,8 +449,7 @@ void reducer(char** argv){
                         for (int i = 0; i < num_reduces; i++)
                                 delete(titrack[i]);
 		
-			std::sort(red.begin(), red.end(), comparePairs);
-			wordCombiner(&red);
+			std::sort(red.begin(), red.end(), comparePairsInts);
                 }
         }	
 	if(p11 == 0){
