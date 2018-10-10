@@ -501,26 +501,26 @@ void reducer(char** argv){
 		out.close(); 
 	}
 	shared_mutex_destroy(lock);
-if(p111 == 0){
-	if(p1==0){
+	if(p111 == 0){
+		if(p1==0){
 
-		std::ofstream out;
-		out.open(output);
-		for(int i = 0; i < glb_vec.size(); i++){
-			out << glb_vec[i].first << std::endl;
-		}
-		out.close();
+			std::ofstream out;
+			out.open(output);
+			for(int i = 0; i < glb_vec.size(); i++){
+				out << glb_vec[i].first << std::endl;
+			}
+			out.close();
 	
-	}
-
-	else if(p == 0){
-		std::ofstream out;
-		out.open(output);
-		for(int i = 0; i < glb_vec.size(); i++){
-			out << glb_vec[i].first << "	" << glb_vec[i].second  << std::endl;
 		}
+
+		else if(p == 0){
+			std::ofstream out;
+			out.open(output);
+			for(int i = 0; i < glb_vec.size(); i++){
+				out << glb_vec[i].first << "\t" << glb_vec[i].second  << std::endl;
+			}
 		out.close();
-}
+		}
 	}
 }
 
