@@ -1,4 +1,4 @@
-# Assignment-1-Map-and-Reduce
+# Map-and-Reduce
 
 Overview
 
